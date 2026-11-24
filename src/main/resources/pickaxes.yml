@@ -1,0 +1,245 @@
+# ==============================================================================
+# MythiccRegion - Pickaxe Profiles Configuration (pickaxes.yml)
+# All parameters are 100% customizable without hardcoded values.
+# Full sample configs mapped directly from D:\Server\Mythicc\plugins\MythicMobs:
+# - Mining_Items.yml (MinePickaxe_Tier1 to Tier10)
+# - Cup3x3_Items.yml (CupNo3x3_1 to CupNo3x3_12)
+# - Cup5x5_Items.yml (CupNo5x5_1)
+# ==============================================================================
+
+default-profile:
+  mining-power: 1
+  damage-per-hit: 1
+  break-radius: 0
+  multiplier-bonus: 0.0
+  direct-to-inventory: false
+
+pickaxes:
+  # ============================================================================
+  # 1. MYTHICMOBS MINING PICKAXES: 10 RPG TIERS (MinePickaxe_Tier1 -> Tier10)
+  # ============================================================================
+  MinePickaxe_Tier1:
+    mythic-item: "MinePickaxe_Tier1"
+    mining-power: 1
+    damage-per-hit: 1
+    break-radius: 0
+    multiplier-bonus: 0.15
+    direct-to-inventory: false
+    break-sound:
+      name: "block.stone.break"
+      volume: 1.0
+      pitch: 1.2
+    break-particle: "CRIT"
+
+  MinePickaxe_Tier2:
+    mythic-item: "MinePickaxe_Tier2"
+    mining-power: 2
+    damage-per-hit: 2
+    break-radius: 0
+    multiplier-bonus: 0.20
+    direct-to-inventory: false
+    break-sound:
+      name: "block.copper.break"
+      volume: 1.0
+      pitch: 1.3
+    break-particle: "CRIT"
+
+  MinePickaxe_Tier3:
+    mythic-item: "MinePickaxe_Tier3"
+    mining-power: 3
+    damage-per-hit: 3
+    break-radius: 0
+    multiplier-bonus: 0.25
+    direct-to-inventory: true
+    break-sound:
+      name: "block.iron.break"
+      volume: 1.0
+      pitch: 1.2
+    break-particle: "ENCHANTED_HIT"
+
+  MinePickaxe_Tier4:
+    mythic-item: "MinePickaxe_Tier4"
+    mining-power: 4
+    damage-per-hit: 4
+    break-radius: 0
+    multiplier-bonus: 0.30
+    direct-to-inventory: true
+    break-sound:
+      name: "block.deepslate.break"
+      volume: 1.0
+      pitch: 1.4
+    break-particle: "ENCHANTED_HIT"
+
+  MinePickaxe_Tier5:
+    mythic-item: "MinePickaxe_Tier5"
+    mining-power: 5
+    damage-per-hit: 5
+    break-radius: 0
+    multiplier-bonus: 0.35
+    direct-to-inventory: true
+    break-sound:
+      name: "block.amethyst_block.break"
+      volume: 1.0
+      pitch: 1.5
+    break-particle: "FIREWORK"
+
+  MinePickaxe_Tier6:
+    mythic-item: "MinePickaxe_Tier6"
+    mining-power: 6
+    damage-per-hit: 6
+    break-radius: 0
+    multiplier-bonus: 0.40
+    direct-to-inventory: true
+    break-sound:
+      name: "block.anvil.land"
+      volume: 0.8
+      pitch: 1.8
+    break-particle: "PORTAL"
+
+  MinePickaxe_Tier7:
+    mythic-item: "MinePickaxe_Tier7"
+    mining-power: 7
+    damage-per-hit: 7
+    break-radius: 0
+    multiplier-bonus: 0.45
+    direct-to-inventory: true
+    break-sound:
+      name: "block.netherite_block.break"
+      volume: 1.0
+      pitch: 1.6
+    break-particle: "PORTAL"
+
+  MinePickaxe_Tier8:
+    mythic-item: "MinePickaxe_Tier8"
+    mining-power: 8
+    damage-per-hit: 8
+    break-radius: 0
+    multiplier-bonus: 0.50
+    direct-to-inventory: true
+    break-sound:
+      name: "block.beacon.activate"
+      volume: 0.9
+      pitch: 1.5
+    break-particle: "TOTEM_OF_UNDYING"
+
+  MinePickaxe_Tier9:
+    mythic-item: "MinePickaxe_Tier9"
+    mining-power: 9
+    damage-per-hit: 10
+    break-radius: 0
+    multiplier-bonus: 0.60
+    direct-to-inventory: true
+    break-sound:
+      name: "block.end_portal_frame.fill"
+      volume: 1.0
+      pitch: 1.2
+    break-particle: "DRAGON_BREATH"
+
+  MinePickaxe_Tier10:
+    mythic-item: "MinePickaxe_Tier10"
+    mining-power: 10
+    damage-per-hit: 15
+    break-radius: 0
+    multiplier-bonus: 0.75
+    direct-to-inventory: true
+    break-sound:
+      name: "entity.wither.spawn"
+      volume: 0.6
+      pitch: 2.0
+    break-particle: "EXPLOSION_EMITTER"
+
+  # ============================================================================
+  # 2. MYTHICMOBS EXPLOSIVE AOE PICKAXES: 3x3 (CupNo3x3_1 -> CupNo3x3_12)
+  # ============================================================================
+  CupNo3x3_Tier1:
+    mythic-item: "CupNo3x3_1"
+    mining-power: 2
+    damage-per-hit: 2
+    break-radius: 1
+    multiplier-bonus: 0.10
+    direct-to-inventory: true
+    break-sound:
+      name: "entity.generic.explode"
+      volume: 0.9
+      pitch: 1.2
+    break-particle: "EXPLOSION"
+
+  CupNo3x3_Tier2:
+    mythic-item: "CupNo3x3_2"
+    mining-power: 3
+    damage-per-hit: 3
+    break-radius: 1
+    multiplier-bonus: 0.15
+    direct-to-inventory: true
+    break-sound:
+      name: "entity.generic.explode"
+      volume: 1.0
+      pitch: 1.2
+    break-particle: "EXPLOSION"
+
+  # ============================================================================
+  # 3. MYTHICMOBS SUPER EXPLOSIVE AOE PICKAXES: 5x5 (CupNo5x5_1)
+  # ============================================================================
+  CupNo5x5_Tier1:
+    mythic-item: "CupNo5x5_1"
+    mining-power: 5
+    damage-per-hit: 5
+    break-radius: 2
+    multiplier-bonus: 0.35
+    direct-to-inventory: true
+    break-sound:
+      name: "entity.generic.explode"
+      volume: 1.2
+      pitch: 0.8
+    break-particle: "EXPLOSION_EMITTER"
+
+  # ============================================================================
+  # 4. VANILLA PICKAXES FALLBACK
+  # ============================================================================
+  Vanilla_Wood:
+    vanilla-material: "WOODEN_PICKAXE"
+    mining-power: 1
+    damage-per-hit: 1
+    break-radius: 0
+    multiplier-bonus: 0.0
+    direct-to-inventory: false
+
+  Vanilla_Stone:
+    vanilla-material: "STONE_PICKAXE"
+    mining-power: 1
+    damage-per-hit: 1
+    break-radius: 0
+    multiplier-bonus: 0.0
+    direct-to-inventory: false
+
+  Vanilla_Golden:
+    vanilla-material: "GOLDEN_PICKAXE"
+    mining-power: 1
+    damage-per-hit: 2
+    break-radius: 0
+    multiplier-bonus: 0.0
+    direct-to-inventory: false
+
+  Vanilla_Iron:
+    vanilla-material: "IRON_PICKAXE"
+    mining-power: 2
+    damage-per-hit: 1
+    break-radius: 0
+    multiplier-bonus: 0.0
+    direct-to-inventory: false
+
+  Vanilla_Diamond:
+    vanilla-material: "DIAMOND_PICKAXE"
+    mining-power: 3
+    damage-per-hit: 2
+    break-radius: 0
+    multiplier-bonus: 0.05
+    direct-to-inventory: false
+
+  Vanilla_Netherite:
+    vanilla-material: "NETHERITE_PICKAXE"
+    mining-power: 4
+    damage-per-hit: 3
+    break-radius: 0
+    multiplier-bonus: 0.10
+    direct-to-inventory: true

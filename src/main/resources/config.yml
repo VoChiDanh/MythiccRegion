@@ -1,0 +1,67 @@
+# ==============================================================================
+# MythiccRegion - Main Configuration (config.yml)
+# All messages support MiniMessage formatting (<gradient>, <color>, <bold>, etc.)
+# 100% customizable without hardcoded values.
+# ==============================================================================
+
+prefix: "<gradient:#00e5ff:#1200ff>[MythiccRegion]</gradient> "
+
+# Worlds where MineRegion system is active (empty [] = all worlds)
+whitelist-worlds:
+  - "world"
+  - "dungeon_region_1"
+
+mine:
+  # Item drop delivery behavior if pickaxe profile doesn't specify direct-to-inventory
+  # true = put directly into inventory, false = drop naturally on the ground
+  drop-direct-to-inventory: false
+
+  # When set to true, only regions with flag '/rg flag <region> mine-region allow' or 'custom-mine allow' can be mined!
+  require-worldguard-custom-flag: true
+
+  # Allow players in Creative mode to trigger custom mine mechanics instead of instant breaking
+  allow-creative-mining: true
+
+messages:
+  no-permission: "<red>You do not have permission to execute this command!"
+  player-only: "<red>This command can only be executed by in-game players!"
+  reload-success: "<green>All configuration files, pickaxe profiles, and mine caches reloaded successfully!"
+  version-info: "<gray>MythiccRegion Running Version: <gold><version></gold>"
+
+  help:
+    - "<gold>--------- <yellow>MythiccRegion Help</yellow> ---------</gold>"
+    - "<gray>/mythiccregion reload <dark_gray>- <white>Reload all configs, mines, and pickaxes"
+    - "<gray>/mythiccregion version <dark_gray>- <white>Display plugin version and status"
+    - "<gray>/mythiccregion info <dark_gray>- <white>Inspect regions, flags, and held pickaxe at your position"
+    - "<gray>/mythiccregion bypass <dark_gray>- <white>Toggle admin bypass mode (build/break naturally)"
+    - "<gray>/mythiccregion list <dark_gray>- <white>List all registered mine regions"
+    - "<gray>/mythiccregion pickaxes <dark_gray>- <white>List all registered pickaxe profiles"
+    - "<gray>/mythiccregion give <player> <profile> <dark_gray>- <white>Give a configured pickaxe to a player"
+
+  command:
+    bypass:
+      enabled: "<green>Mine bypass mode <bold>ENABLED</bold>! You can now break and build normally without triggering mine mechanics."
+      disabled: "<yellow>Mine bypass mode <red><bold>DISABLED</bold></red>! Mine mechanics and block regeneration are now active."
+    info:
+      no-region: "<yellow>You are not standing in any WorldGuard region."
+      region-found: "<gray>WorldGuard regions at your position: <gold><regions></gold>"
+      held-pickaxe: "<gray>Held Tool: <green><profile></green> | Power: <yellow><power></yellow> | AoE Radius: <aqua><radius></aqua>"
+      held-none: "<gray>Held item does not match any custom pickaxe profile."
+    list:
+      header: "<gold>====== <yellow>Configured Mine Regions (<count>)</yellow> ======"
+    pickaxes:
+      header: "<gold>====== <yellow>Configured Pickaxe Profiles (<count>)</yellow> ======"
+    give:
+      unknown-profile: "<red>Unknown pickaxe profile: <gold><profile></gold>!"
+      player-not-found: "<red>Target player could not be found!"
+      cannot-create-item: "<red>Could not generate item for profile: <gold><profile></gold>!"
+      success-sender: "<green>Successfully gave pickaxe <gold><profile></gold> to <yellow><player></yellow>!"
+      success-receiver: "<green>You have received pickaxe: <gold><profile></gold>!"
+
+  mine:
+    cannot-mine-material: "<red>This tool cannot be used to mine this type of block!"
+    insufficient-mining-power: "<red>Mining Power too low! Required: <gold><required></gold> (Your tool: <yellow><current></yellow>)"
+    required-profile: "<red>This block requires a specific tool profile: <gold><profile></gold>!"
+    not-allowed-profile: "<red>Your current tool is not permitted to mine this block!"
+    hardness-progress: "<yellow>Block Integrity: <green><current></green><gray>/<white><max></white>"
+    multiplier-notify: "<gold><bold>LUCKY HIT!</bold> <yellow>You received x<multiplier> resource drops!"

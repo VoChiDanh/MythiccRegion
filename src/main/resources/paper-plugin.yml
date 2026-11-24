@@ -1,0 +1,15 @@
+name: MythiccRegion
+version: '${version}'
+main: net.danh.mythiccregion.MythiccRegion
+api-version: '1.21'
+authors: [ VoChiDanh ]
+dependencies:
+  server:
+    WorldGuard:
+      load: AFTER
+      required: true
+      join-classpath: true
+    MythicMobs:
+      load: AFTER
+      required: true
+      join-classpath: true

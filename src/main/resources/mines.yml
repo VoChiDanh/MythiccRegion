@@ -1,0 +1,651 @@
+# ==============================================================================
+# MythiccRegion - Mine Regions Configuration (mines.yml)
+# Fully integrated 8 resource types x 3 tiers (24 MythicMobs materials):
+# - Tier 1: Refined (Special_) -> Mine Tier 1, Tier 2, Tier 3
+# - Tier 2: Pure (Pure_)        -> Mine Tier 4, Tier 5
+# - Tier 3: Astral (Astral_)    -> Mine Tier 6 (Astral Void Realm)
+#
+# Sequenced Regeneration (regen-pool):
+# Each mine contains multiple block types. When mined, the block turns into replace-block
+# (BEDROCK) while awaiting respawn, then regenerates into the next block based on weighted percentages.
+# ==============================================================================
+
+regions:
+  # ============================================================================
+  # MINE TIER 1: PROSPECTOR'S VALLEY (Required Tool: Tier 1 - Tier 2)
+  # Resource Drops: Wood, Stone, Coal, Copper (Refined)
+  # WorldGuard region: 'mine_tier1' or flag 'mine-id: mine_tier1'
+  # ============================================================================
+  mine_tier1:
+    worldguard-region: "mine_tier1"
+    blocks:
+      # 1. Base Stone Block
+      STONE:
+        respawn-time: 8
+        replace-block: "BEDROCK"
+        hardness-hits: 2
+        required-mining-power: 1
+        regen-pool:
+          STONE: 65.0
+          COAL_ORE: 20.0
+          COPPER_ORE: 10.0
+          OAK_LOG: 5.0
+        drops:
+          stone_drop:
+            mythic-item: "Special_Stone"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 20.0
+
+      # 2. Coal Ore Block
+      COAL_ORE:
+        respawn-time: 12
+        replace-block: "BEDROCK"
+        hardness-hits: 3
+        required-mining-power: 1
+        regen-pool:
+          STONE: 45.0
+          COAL_ORE: 40.0
+          COPPER_ORE: 15.0
+        drops:
+          coal_drop:
+            mythic-item: "Special_Coal"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 2.0
+              3: 8.0
+              2: 25.0
+
+      # 3. Copper Ore Block
+      COPPER_ORE:
+        respawn-time: 15
+        replace-block: "BEDROCK"
+        hardness-hits: 4
+        required-mining-power: 2
+        regen-pool:
+          STONE: 50.0
+          COAL_ORE: 25.0
+          COPPER_ORE: 25.0
+        drops:
+          copper_drop:
+            mythic-item: "Special_Copper_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              3: 10.0
+              2: 25.0
+
+      # 4. Ancient Oak Log
+      OAK_LOG:
+        respawn-time: 10
+        replace-block: "BEDROCK"
+        hardness-hits: 2
+        required-mining-power: 1
+        regen-pool:
+          OAK_LOG: 60.0
+          STONE: 40.0
+        drops:
+          wood_drop:
+            mythic-item: "Special_Wood"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 20.0
+
+  # ============================================================================
+  # MINE TIER 2: GOLDEN CAVERN (Required Tool: Tier 3 - Tier 4)
+  # Resource Drops: Iron, Gold, Diamond (Refined) + Ancient Geode
+  # WorldGuard region: 'mine_tier2'
+  # ============================================================================
+  mine_tier2:
+    worldguard-region: "mine_tier2"
+    blocks:
+      # 1. Base Deepslate Block
+      DEEPSLATE:
+        respawn-time: 15
+        replace-block: "BEDROCK"
+        hardness-hits: 4
+        required-mining-power: 2
+        regen-pool:
+          DEEPSLATE: 55.0
+          DEEPSLATE_IRON_ORE: 25.0
+          DEEPSLATE_GOLD_ORE: 15.0
+          DEEPSLATE_DIAMOND_ORE: 5.0
+        drops:
+          stone_drop:
+            mythic-item: "Special_Stone"
+            min-amount: 2
+            max-amount: 4
+            chance: 100.0
+
+      # 2. Deepslate Iron Ore
+      DEEPSLATE_IRON_ORE:
+        respawn-time: 20
+        replace-block: "BEDROCK"
+        hardness-hits: 5
+        required-mining-power: 3
+        regen-pool:
+          DEEPSLATE: 40.0
+          DEEPSLATE_IRON_ORE: 40.0
+          DEEPSLATE_GOLD_ORE: 20.0
+        drops:
+          iron_drop:
+            mythic-item: "Special_Iron_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 3.0
+              3: 10.0
+              2: 25.0
+
+      # 3. Deepslate Gold Ore
+      DEEPSLATE_GOLD_ORE:
+        respawn-time: 25
+        replace-block: "BEDROCK"
+        hardness-hits: 6
+        required-mining-power: 3
+        regen-pool:
+          DEEPSLATE: 45.0
+          DEEPSLATE_IRON_ORE: 25.0
+          DEEPSLATE_GOLD_ORE: 25.0
+          DEEPSLATE_DIAMOND_ORE: 5.0
+        drops:
+          gold_drop:
+            mythic-item: "Special_Gold_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 3.0
+              3: 10.0
+              2: 20.0
+          ancient_geode_bonus:
+            mythic-item: "Ancient_Geode"
+            min-amount: 1
+            max-amount: 1
+            chance: 15.0
+
+      # 4. Deepslate Diamond Ore (Rare)
+      DEEPSLATE_DIAMOND_ORE:
+        respawn-time: 35
+        replace-block: "BEDROCK"
+        hardness-hits: 8
+        required-mining-power: 4
+        regen-pool:
+          DEEPSLATE: 50.0
+          DEEPSLATE_GOLD_ORE: 30.0
+          DEEPSLATE_DIAMOND_ORE: 20.0
+        drops:
+          diamond_drop:
+            mythic-item: "Special_Diamond"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              5: 2.0
+              4: 5.0
+              3: 15.0
+              2: 30.0
+          ancient_geode_bonus:
+            mythic-item: "Ancient_Geode"
+            min-amount: 1
+            max-amount: 2
+            chance: 30.0
+
+  # ============================================================================
+  # MINE TIER 3: ANCIENT ABYSS (Required Tool: Tier 5)
+  # Resource Drops: Netherite, Diamond (Refined) + Ancient Geode
+  # WorldGuard region: 'mine_tier3'
+  # ============================================================================
+  mine_tier3:
+    worldguard-region: "mine_tier3"
+    blocks:
+      # 1. Base Blackstone Block
+      BLACKSTONE:
+        respawn-time: 20
+        replace-block: "BEDROCK"
+        hardness-hits: 6
+        required-mining-power: 4
+        regen-pool:
+          BLACKSTONE: 60.0
+          ANCIENT_DEBRIS: 30.0
+          CRYING_OBSIDIAN: 10.0
+        drops:
+          stone_drop:
+            mythic-item: "Special_Stone"
+            min-amount: 3
+            max-amount: 5
+            chance: 100.0
+
+      # 2. Ancient Debris
+      ANCIENT_DEBRIS:
+        respawn-time: 45
+        replace-block: "CRYING_OBSIDIAN"
+        hardness-hits: 12
+        required-mining-power: 5
+        regen-pool:
+          BLACKSTONE: 45.0
+          ANCIENT_DEBRIS: 40.0
+          CRYING_OBSIDIAN: 15.0
+        drops:
+          netherite_drop:
+            mythic-item: "Special_Netherite_Ingot"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              4: 3.0
+              3: 10.0
+              2: 25.0
+          ancient_geode_bonus:
+            mythic-item: "Ancient_Geode"
+            min-amount: 1
+            max-amount: 2
+            chance: 35.0
+
+      # 3. Crying Obsidian (Jackpot Ore Block)
+      CRYING_OBSIDIAN:
+        respawn-time: 60
+        replace-block: "OBSIDIAN"
+        hardness-hits: 15
+        required-mining-power: 5
+        regen-pool:
+          BLACKSTONE: 50.0
+          ANCIENT_DEBRIS: 35.0
+          CRYING_OBSIDIAN: 15.0
+        drops:
+          netherite_drop:
+            mythic-item: "Special_Netherite_Ingot"
+            min-amount: 2
+            max-amount: 4
+            chance: 100.0
+            multipliers:
+              4: 5.0
+              3: 15.0
+              2: 35.0
+          diamond_drop:
+            mythic-item: "Special_Diamond"
+            min-amount: 2
+            max-amount: 3
+            chance: 100.0
+          ancient_geode_bonus:
+            mythic-item: "Ancient_Geode"
+            min-amount: 2
+            max-amount: 4
+            chance: 60.0
+
+  # ============================================================================
+  # MINE TIER 4: PURE VEIN (Required Tool: Tier 6 - Tier 7)
+  # Resource Drops: Wood, Stone, Coal, Copper, Iron (PURE TIER - Pure_)
+  # WorldGuard region: 'mine_tier4'
+  # ============================================================================
+  mine_tier4:
+    worldguard-region: "mine_tier4"
+    blocks:
+      # 1. Base Tuff Block
+      TUFF:
+        respawn-time: 20
+        replace-block: "BEDROCK"
+        hardness-hits: 6
+        required-mining-power: 5
+        regen-pool:
+          TUFF: 50.0
+          STRIPPED_OAK_LOG: 15.0
+          COBBLED_DEEPSLATE: 15.0
+          RAW_COPPER_BLOCK: 10.0
+          RAW_IRON_BLOCK: 10.0
+        drops:
+          pure_stone_drop:
+            mythic-item: "Pure_Stone"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 20.0
+
+      # 2. Pure Stripped Oak Log
+      STRIPPED_OAK_LOG:
+        respawn-time: 25
+        replace-block: "BEDROCK"
+        hardness-hits: 7
+        required-mining-power: 6
+        regen-pool:
+          TUFF: 40.0
+          STRIPPED_OAK_LOG: 45.0
+          RAW_COPPER_BLOCK: 15.0
+        drops:
+          pure_wood_drop:
+            mythic-item: "Pure_Wood"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 20.0
+
+      # 3. Pure Coal Crystal Block
+      COBBLED_DEEPSLATE:
+        respawn-time: 25
+        replace-block: "BEDROCK"
+        hardness-hits: 7
+        required-mining-power: 6
+        regen-pool:
+          TUFF: 40.0
+          COBBLED_DEEPSLATE: 40.0
+          RAW_IRON_BLOCK: 20.0
+        drops:
+          pure_coal_drop:
+            mythic-item: "Pure_Coal"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              3: 8.0
+              2: 25.0
+
+      # 4. Pure Raw Copper Block
+      RAW_COPPER_BLOCK:
+        respawn-time: 30
+        replace-block: "BEDROCK"
+        hardness-hits: 8
+        required-mining-power: 6
+        regen-pool:
+          TUFF: 45.0
+          RAW_COPPER_BLOCK: 35.0
+          RAW_IRON_BLOCK: 20.0
+        drops:
+          pure_copper_drop:
+            mythic-item: "Pure_Copper_Ingot"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 8.0
+              2: 25.0
+
+      # 5. Pure Raw Iron Block
+      RAW_IRON_BLOCK:
+        respawn-time: 35
+        replace-block: "BEDROCK"
+        hardness-hits: 9
+        required-mining-power: 7
+        regen-pool:
+          TUFF: 50.0
+          RAW_COPPER_BLOCK: 20.0
+          RAW_IRON_BLOCK: 30.0
+        drops:
+          pure_iron_drop:
+            mythic-item: "Pure_Iron_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 3.0
+              3: 10.0
+              2: 30.0
+
+  # ============================================================================
+  # MINE TIER 5: SUPREME PURE SANCTUARY (Required Tool: Tier 8)
+  # Resource Drops: Gold, Diamond, Netherite (PURE TIER - Pure_) + Void Drill Core
+  # WorldGuard region: 'mine_tier5'
+  # ============================================================================
+  mine_tier5:
+    worldguard-region: "mine_tier5"
+    blocks:
+      # 1. Pure Raw Gold Block
+      RAW_GOLD_BLOCK:
+        respawn-time: 40
+        replace-block: "BEDROCK"
+        hardness-hits: 10
+        required-mining-power: 7
+        regen-pool:
+          RAW_GOLD_BLOCK: 50.0
+          PRISMARINE_BRICKS: 35.0
+          GILDED_BLACKSTONE: 15.0
+        drops:
+          pure_gold_drop:
+            mythic-item: "Pure_Gold_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              3: 10.0
+              2: 30.0
+
+      # 2. Pure Diamond Prismarine Bricks
+      PRISMARINE_BRICKS:
+        respawn-time: 50
+        replace-block: "BEDROCK"
+        hardness-hits: 12
+        required-mining-power: 8
+        regen-pool:
+          RAW_GOLD_BLOCK: 35.0
+          PRISMARINE_BRICKS: 45.0
+          GILDED_BLACKSTONE: 20.0
+        drops:
+          pure_diamond_drop:
+            mythic-item: "Pure_Diamond"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 4.0
+              3: 12.0
+              2: 35.0
+
+      # 3. Pure Gilded Blackstone
+      GILDED_BLACKSTONE:
+        respawn-time: 65
+        replace-block: "BEDROCK"
+        hardness-hits: 16
+        required-mining-power: 8
+        regen-pool:
+          RAW_GOLD_BLOCK: 30.0
+          PRISMARINE_BRICKS: 30.0
+          GILDED_BLACKSTONE: 40.0
+        drops:
+          pure_netherite_drop:
+            mythic-item: "Pure_Netherite_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              5: 3.0
+              3: 15.0
+              2: 30.0
+          void_drill_core_bonus:
+            mythic-item: "Void_Drill_Core"
+            min-amount: 1
+            max-amount: 1
+            chance: 8.0
+
+  # ============================================================================
+  # MINE TIER 6: ASTRAL VOID REALM (Required Tool: Tier 9 - Tier 10)
+  # Resource Drops: ALL 8 ASTRAL MATERIALS (Astral_) + Void Drill Core
+  # WorldGuard region: 'mine_tier6'
+  # ============================================================================
+  mine_tier6:
+    worldguard-region: "mine_tier6"
+    blocks:
+      # 1. Astral Wood
+      DARK_OAK_WOOD:
+        respawn-time: 40
+        replace-block: "BEDROCK"
+        hardness-hits: 12
+        required-mining-power: 9
+        regen-pool:
+          DARK_OAK_WOOD: 60.0
+          LODESTONE: 40.0
+        drops:
+          astral_wood_drop:
+            mythic-item: "Astral_Wood"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 25.0
+
+      # 2. Astral Stone (Lodestone)
+      LODESTONE:
+        respawn-time: 40
+        replace-block: "BEDROCK"
+        hardness-hits: 12
+        required-mining-power: 8
+        regen-pool:
+          LODESTONE: 40.0
+          COAL_BLOCK: 20.0
+          COPPER_BLOCK: 15.0
+          IRON_BLOCK: 15.0
+          GOLD_BLOCK: 10.0
+        drops:
+          astral_stone_drop:
+            mythic-item: "Astral_Stone"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 5.0
+              2: 25.0
+
+      # 3. Astral Coal Block
+      COAL_BLOCK:
+        respawn-time: 45
+        replace-block: "BEDROCK"
+        hardness-hits: 12
+        required-mining-power: 9
+        regen-pool:
+          LODESTONE: 35.0
+          COAL_BLOCK: 40.0
+          COPPER_BLOCK: 25.0
+        drops:
+          astral_coal_drop:
+            mythic-item: "Astral_Coal"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 8.0
+              2: 25.0
+
+      # 4. Astral Copper Block
+      COPPER_BLOCK:
+        respawn-time: 50
+        replace-block: "BEDROCK"
+        hardness-hits: 14
+        required-mining-power: 9
+        regen-pool:
+          LODESTONE: 30.0
+          COPPER_BLOCK: 40.0
+          IRON_BLOCK: 30.0
+        drops:
+          astral_copper_drop:
+            mythic-item: "Astral_Copper_Ingot"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 8.0
+              2: 25.0
+
+      # 5. Astral Iron Block
+      IRON_BLOCK:
+        respawn-time: 55
+        replace-block: "BEDROCK"
+        hardness-hits: 15
+        required-mining-power: 9
+        regen-pool:
+          LODESTONE: 25.0
+          IRON_BLOCK: 45.0
+          GOLD_BLOCK: 30.0
+        drops:
+          astral_iron_drop:
+            mythic-item: "Astral_Iron_Ingot"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 10.0
+              2: 30.0
+
+      # 6. Astral Gold Block
+      GOLD_BLOCK:
+        respawn-time: 65
+        replace-block: "BEDROCK"
+        hardness-hits: 18
+        required-mining-power: 9
+        regen-pool:
+          LODESTONE: 20.0
+          IRON_BLOCK: 20.0
+          GOLD_BLOCK: 40.0
+          DIAMOND_BLOCK: 20.0
+        drops:
+          astral_gold_drop:
+            mythic-item: "Astral_Gold_Ingot"
+            min-amount: 1
+            max-amount: 2
+            chance: 100.0
+            multipliers:
+              3: 10.0
+              2: 30.0
+
+      # 7. Astral Diamond Block
+      DIAMOND_BLOCK:
+        respawn-time: 80
+        replace-block: "BEDROCK"
+        hardness-hits: 22
+        required-mining-power: 10
+        regen-pool:
+          GOLD_BLOCK: 30.0
+          DIAMOND_BLOCK: 50.0
+          NETHERITE_BLOCK: 20.0
+        drops:
+          astral_diamond_drop:
+            mythic-item: "Astral_Diamond"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              4: 5.0
+              3: 15.0
+              2: 40.0
+          void_drill_core_bonus:
+            mythic-item: "Void_Drill_Core"
+            min-amount: 1
+            max-amount: 1
+            chance: 10.0
+
+      # 8. Astral Netherite Block (Supreme Pinnacle)
+      NETHERITE_BLOCK:
+        respawn-time: 120
+        replace-block: "BEDROCK"
+        hardness-hits: 30
+        required-mining-power: 10
+        regen-pool:
+          DIAMOND_BLOCK: 40.0
+          NETHERITE_BLOCK: 60.0
+        drops:
+          astral_netherite_drop:
+            mythic-item: "Astral_Netherite_Ingot"
+            min-amount: 1
+            max-amount: 3
+            chance: 100.0
+            multipliers:
+              5: 5.0
+              3: 25.0
+              2: 50.0
+          void_drill_core_bonus:
+            mythic-item: "Void_Drill_Core"
+            min-amount: 1
+            max-amount: 2
+            chance: 20.0
