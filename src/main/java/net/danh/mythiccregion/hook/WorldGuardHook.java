@@ -21,18 +21,21 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * Native WorldGuard integration hook.
+ * Thread-safe native WorldGuard integration hook.
  * Directly registers and queries WorldGuard custom flags:
- * - 'mine-region' & 'custom-mine': StateFlag (default: DENY). Set to ALLOW via '/rg flag <region> mine-region allow'.
- * - 'mine-id': StringFlag. Links region directly to a specific block config section from mines.yml.
+ * <ul>
+ *   <li>'mine-region' & 'custom-mine': StateFlag (default: DENY). Set to ALLOW via '/rg flag &lt;region&gt; mine-region allow'.</li>
+ *   <li>'mine-id': StringFlag. Links region directly to a specific block config section from mines.yml.</li>
+ * </ul>
  */
 @NullMarked
 public final class WorldGuardHook {
 
-    private static boolean enabled = false;
+    private static final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @Nullable
     public static StateFlag MINE_REGION_FLAG = null;
@@ -98,15 +101,15 @@ public final class WorldGuardHook {
      */
     public static void init() {
         Plugin plugin = Bukkit.getPluginManager().getPlugin("WorldGuard");
-        enabled = plugin != null && plugin.isEnabled();
+        enabled.set(plugin != null && plugin.isEnabled());
     }
 
     public static boolean isEnabled() {
-        if (!enabled) {
+        if (!enabled.get()) {
             Plugin plugin = Bukkit.getPluginManager().getPlugin("WorldGuard");
-            enabled = plugin != null && plugin.isEnabled();
+            enabled.set(plugin != null && plugin.isEnabled());
         }
-        return enabled;
+        return enabled.get();
     }
 
     /**
@@ -157,16 +160,17 @@ public final class WorldGuardHook {
     }
 
     /**
-     * Retrieves all region IDs intersecting the given location.
+     * Returns all WorldGuard region IDs overlapping the specified block location.
      */
     public static Set<String> getRegionsAt(@Nullable Location location) {
-        if (!isEnabled() || location == null || location.getWorld() == null) {
+        if (!isEnabled() || location == null) {
             return Collections.emptySet();
         }
 
         try {
             RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
             ApplicableRegionSet set = container.createQuery().getApplicableRegions(BukkitAdapter.adapt(location));
+
             return set.getRegions().stream()
                     .map(ProtectedRegion::getId)
                     .collect(Collectors.toSet());

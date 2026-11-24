@@ -22,14 +22,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Pure MythicMobs hook providing item checks, item generation, and DropTable resolution.
+ * Uses AtomicBoolean for thread-safe status tracking across Folia region threads.
  */
 @NullMarked
 public final class MythicMobsHook {
 
-    private static boolean enabled = false;
+    private static final AtomicBoolean enabled = new AtomicBoolean(false);
 
     private MythicMobsHook() {
         throw new UnsupportedOperationException("Utility class");
@@ -40,18 +42,18 @@ public final class MythicMobsHook {
      */
     public static void init() {
         Plugin plugin = Bukkit.getPluginManager().getPlugin("MythicMobs");
-        enabled = plugin != null && plugin.isEnabled();
+        enabled.set(plugin != null && plugin.isEnabled());
     }
 
     /**
      * Checks if MythicMobs is present and enabled.
      */
     public static boolean isEnabled() {
-        if (!enabled) {
+        if (!enabled.get()) {
             Plugin plugin = Bukkit.getPluginManager().getPlugin("MythicMobs");
-            enabled = plugin != null && plugin.isEnabled();
+            enabled.set(plugin != null && plugin.isEnabled());
         }
-        return enabled;
+        return enabled.get();
     }
 
     /**

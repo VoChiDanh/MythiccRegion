@@ -9,10 +9,11 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Manages loading and caching of all mine regions from mines.yml.
- * Everything is completely customizable via YAML.
+ * Thread-safe collections used throughout to guarantee zero ConcurrentModificationExceptions.
  */
 @NullMarked
 public class MineManager {
@@ -47,7 +48,7 @@ public class MineManager {
             ConfigurationSection blocksSec = sec.getConfigurationSection("blocks");
             if (blocksSec == null) continue;
 
-            Map<Material, MineBlockConfig> blockConfigs = new HashMap<>();
+            Map<Material, MineBlockConfig> blockConfigs = new ConcurrentHashMap<>();
 
             for (String matKey : blocksSec.getKeys(false)) {
                 ConfigurationSection bSec = blocksSec.getConfigurationSection(matKey);
@@ -68,13 +69,13 @@ public class MineManager {
                 int reqPower = bSec.getInt("required-mining-power", 0);
                 String reqProfile = bSec.getString("required-pickaxe-profile");
 
-                Set<String> allowedProfiles = new HashSet<>();
+                Set<String> allowedProfiles = ConcurrentHashMap.newKeySet();
                 for (String p : bSec.getStringList("allowed-pickaxe-profiles")) {
                     allowedProfiles.add(p.toLowerCase(Locale.ROOT));
                 }
 
                 // Load custom regen pool (e.g., COAL_ORE: 30, STONE: 60)
-                List<MineBlockConfig.WeightedRegenBlock> regenPool = new ArrayList<>();
+                List<MineBlockConfig.WeightedRegenBlock> regenPool = new CopyOnWriteArrayList<>();
                 ConfigurationSection regenSec = bSec.getConfigurationSection("regen-pool");
                 if (regenSec != null) {
                     for (String rMatKey : regenSec.getKeys(false)) {
@@ -87,10 +88,10 @@ public class MineManager {
                 }
 
                 // Load custom commands
-                List<String> commands = bSec.getStringList("commands");
+                List<String> commands = new CopyOnWriteArrayList<>(bSec.getStringList("commands"));
 
                 // Load drop specifications
-                List<MineDrop> drops = new ArrayList<>();
+                List<MineDrop> drops = new CopyOnWriteArrayList<>();
                 ConfigurationSection dropsSec = bSec.getConfigurationSection("drops");
                 if (dropsSec != null) {
                     for (String dropKey : dropsSec.getKeys(false)) {
@@ -105,7 +106,7 @@ public class MineManager {
                         double chance = dSec.getDouble("chance", 100.0);
 
                         // Load multiplier chances
-                        List<MineDrop.MultiplierChance> multipliers = new ArrayList<>();
+                        List<MineDrop.MultiplierChance> multipliers = new CopyOnWriteArrayList<>();
                         ConfigurationSection multSec = dSec.getConfigurationSection("multipliers");
                         if (multSec != null) {
                             for (String mKey : multSec.getKeys(false)) {
@@ -148,6 +149,6 @@ public class MineManager {
     }
 
     public Map<String, MineRegion> getRegions() {
-        return Collections.unmodifiableMap(regions);
+        return regions;
     }
 }

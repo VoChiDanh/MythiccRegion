@@ -10,12 +10,14 @@ import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages all pickaxe profiles loaded dynamically from pickaxes.yml.
- * Uses modern Adventure Key for sounds without deprecated Bukkit Sound enum lookups.
+ * Thread-safe maps and sets prevent concurrency issues across Folia worker threads.
  */
 @NullMarked
 public class PickaxeManager {
@@ -100,13 +102,13 @@ public class PickaxeManager {
 
         String breakParticle = sec.getString("break-particle");
 
-        Set<Material> allowed = new HashSet<>();
+        Set<Material> allowed = ConcurrentHashMap.newKeySet();
         for (String m : sec.getStringList("allowed-materials")) {
             Material mat = Material.matchMaterial(m);
             if (mat != null) allowed.add(mat);
         }
 
-        Set<Material> denied = new HashSet<>();
+        Set<Material> denied = ConcurrentHashMap.newKeySet();
         for (String m : sec.getStringList("denied-materials")) {
             Material mat = Material.matchMaterial(m);
             if (mat != null) denied.add(mat);
@@ -151,10 +153,10 @@ public class PickaxeManager {
             }
         }
 
-        // 2. Check if it matches a vanilla material profile
-        PickaxeProfile vanillaProfile = profilesByMaterial.get(item.getType());
-        if (vanillaProfile != null) {
-            return vanillaProfile;
+        // 2. Check by vanilla Material
+        PickaxeProfile profile = profilesByMaterial.get(item.getType());
+        if (profile != null) {
+            return profile;
         }
 
         // 3. Fallback to default configured profile
@@ -162,6 +164,6 @@ public class PickaxeManager {
     }
 
     public Map<String, PickaxeProfile> getProfiles() {
-        return Collections.unmodifiableMap(profilesById);
+        return profilesById;
     }
 }

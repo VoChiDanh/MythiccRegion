@@ -3,6 +3,7 @@ package net.danh.mythiccregion.mine;
 import net.danh.mythiccregion.MythiccRegion;
 import net.danh.mythiccregion.core.color.ColorParser;
 import net.danh.mythiccregion.core.config.ConfigFile;
+import net.danh.mythiccregion.core.scheduler.TaskScheduler;
 import net.danh.mythiccregion.hook.MythicMobsHook;
 import net.danh.mythiccregion.hook.WorldGuardHook;
 import net.danh.mythiccregion.pickaxe.PickaxeManager;
@@ -13,6 +14,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,6 +24,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.jspecify.annotations.NullMarked;
@@ -33,11 +37,16 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Event listener handling custom mining logic in protected WorldGuard regions.
- * Integrates:
- * 1. BlockDamageEvent & PlayerInteractEvent for instant left-click progressive mining
- * 2. Visual block crack packet animation (Player#sendBlockDamage)
- * 3. Fallback BlockBreakEvent for standard breakage
- * 4. AoE radius mining (3x3, 5x5) and MythicMobs integration
+ * Fully compatible with Folia regionized multithreading and standard Paper/Spigot architectures.
+ *
+ * <p>Folia Concurrency Architecture:</p>
+ * <ul>
+ *   <li>Player inventory manipulation runs on {@link TaskScheduler#runAtEntity}.</li>
+ *   <li>Natural item dropping and particle effects run on {@link TaskScheduler#runAtLocation}.</li>
+ *   <li>Console commands run on {@link TaskScheduler#runGlobal}.</li>
+ *   <li>AoE radius mining dispatches each neighboring block coordinate to its specific region thread.</li>
+ *   <li>All state maps use ConcurrentHashMap with PlayerQuitEvent cleanup to eliminate memory leaks.</li>
+ * </ul>
  */
 @NullMarked
 public class MineBlockListener implements Listener {
@@ -51,8 +60,8 @@ public class MineBlockListener implements Listener {
     // Cooldown per player to prevent left-click spamming (1 hit every 250ms)
     private final Map<UUID, Long> clickCooldown = new ConcurrentHashMap<>();
 
-    // Prevent recursive block break triggers during AoE mining
-    private final Set<Location> recursiveProtection = Collections.newSetFromMap(new WeakHashMap<>());
+    // Thread-safe set preventing recursive block break triggers during AoE mining
+    private final Set<Location> recursiveProtection = ConcurrentHashMap.newKeySet();
 
     public MineBlockListener(
             MythiccRegion plugin,
@@ -69,7 +78,23 @@ public class MineBlockListener implements Listener {
     }
 
     /**
-     * Intercepts left click block damage to allow progressive mining in protected regions
+     * Cleans up player memory on disconnect to prevent memory leaks.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        clickCooldown.remove(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * Cleans up tracked world locations when a world is unloaded.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldUnload(WorldUnloadEvent event) {
+        handler.onWorldUnload(event.getWorld());
+    }
+
+    /**
+     * Intercepts left-click block damage to allow progressive mining in protected regions
      * where WorldGuard cancels standard BlockBreakEvent.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
@@ -254,7 +279,7 @@ public class MineBlockListener implements Listener {
      * 1. Resets crack visual animation & hit counter.
      * 2. Plays break sound & particles.
      * 3. Drops custom items (Mythic / Vanilla) with multiplier calculations.
-     * 4. Executes configured console commands.
+     * 4. Executes configured console commands via GlobalRegionScheduler.
      * 5. Instantly turns block into replaceBlock (e.g. BEDROCK) and schedules sequenced regeneration.
      */
     private void completeBlockBreak(
@@ -271,14 +296,14 @@ public class MineBlockListener implements Listener {
         player.sendBlockDamage(loc, 0.0f);
 
         // Break sound & particles
-        playBreakEffects(player, loc, profile, originalType);
+        playBreakEffects(loc, profile, originalType);
 
-        // Distribute drops
+        // Distribute drops with Folia entity/region thread concurrency
         double bonusMultiplierChance = profile != null ? profile.multiplierBonus() : 0.0;
         boolean directToInventory = profile != null ? profile.directToInventory() : mainConfig.getBoolean("mine.drop-direct-to-inventory", false);
         processDrops(player, loc, blockConfig.getDrops(), bonusMultiplierChance, directToInventory);
 
-        // Execute commands
+        // Execute commands on GlobalRegionScheduler
         executeCommands(player, blockConfig.getCommands());
 
         // Sequenced regeneration: immediately sets to replace-block and schedules respawn
@@ -402,6 +427,11 @@ public class MineBlockListener implements Listener {
         return true;
     }
 
+    /**
+     * Executes AoE radius mining.
+     * On Folia, neighboring blocks might cross chunk borders into adjacent threaded regions.
+     * Each target block coordinate is safely dispatched to its owning region thread via {@link TaskScheduler#runAtLocation}.
+     */
     private void processAoeMining(
             Player player,
             Block centerBlock,
@@ -410,6 +440,7 @@ public class MineBlockListener implements Listener {
             int radius
     ) {
         Location centerLoc = centerBlock.getLocation();
+        World world = centerBlock.getWorld();
         int cx = centerLoc.getBlockX();
         int cy = centerLoc.getBlockY();
         int cz = centerLoc.getBlockZ();
@@ -417,22 +448,25 @@ public class MineBlockListener implements Listener {
         for (int x = cx - radius; x <= cx + radius; x++) {
             for (int y = cy - radius; y <= cy + radius; y++) {
                 for (int z = cz - radius; z <= cz + radius; z++) {
-                    Block targetBlock = centerBlock.getWorld().getBlockAt(x, y, z);
-                    Location tLoc = targetBlock.getLocation();
+                    Location targetLoc = new Location(world, x, y, z);
 
-                    if (handler.isPendingRespawn(tLoc)) continue;
+                    // Dispatch execution to the region thread owning targetLoc (cross-chunk safe on Folia)
+                    TaskScheduler.runAtLocation(plugin, targetLoc, () -> {
+                        if (handler.isPendingRespawn(targetLoc)) return;
 
-                    MineBlockConfig cfg = mineRegion.getBlockConfig(targetBlock.getType());
-                    if (cfg == null) continue;
+                        Block targetBlock = targetLoc.getBlock();
+                        MineBlockConfig cfg = mineRegion.getBlockConfig(targetBlock.getType());
+                        if (cfg == null) return;
 
-                    if (!validatePickaxe(player, profile, cfg, targetBlock.getType())) continue;
+                        if (!validatePickaxe(player, profile, cfg, targetBlock.getType())) return;
 
-                    recursiveProtection.add(tLoc);
-                    try {
-                        completeBlockBreak(player, targetBlock, cfg, profile);
-                    } finally {
-                        recursiveProtection.remove(tLoc);
-                    }
+                        recursiveProtection.add(targetLoc);
+                        try {
+                            completeBlockBreak(player, targetBlock, cfg, profile);
+                        } finally {
+                            recursiveProtection.remove(targetLoc);
+                        }
+                    });
                 }
             }
         }
@@ -497,46 +531,75 @@ public class MineBlockListener implements Listener {
         }
     }
 
+    /**
+     * Executes console commands on the GlobalRegionScheduler to comply with Folia threading rules.
+     */
     private void executeCommands(Player player, List<String> commands) {
         if (commands.isEmpty()) return;
-        for (String cmd : commands) {
-            String formatted = cmd.replace("%player_name%", player.getName())
-                    .replace("%player_uuid%", player.getUniqueId().toString());
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formatted);
-        }
-    }
-
-    private void deliverItem(Player player, Location loc, ItemStack item, boolean directToInventory) {
-        Location dropLoc = loc.clone().add(0.5, 0.5, 0.5);
-        if (directToInventory) {
-            Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
-            for (ItemStack left : leftover.values()) {
-                dropLoc.getWorld().dropItemNaturally(dropLoc, left);
+        TaskScheduler.runGlobal(plugin, () -> {
+            for (String cmd : commands) {
+                String formatted = cmd.replace("%player_name%", player.getName())
+                        .replace("%player_uuid%", player.getUniqueId().toString());
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formatted);
             }
+        });
+    }
+
+    /**
+     * Delivers item drops cleanly.
+     * Folia Concurrency Guarantee:
+     * - Direct-to-inventory modifications execute strictly on the player's entity thread.
+     * - Spawning dropped item entities executes strictly on the target location's region thread.
+     */
+    private void deliverItem(Player player, Location loc, ItemStack item, boolean directToInventory) {
+        if (directToInventory) {
+            TaskScheduler.runAtEntity(plugin, player, () -> {
+                Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
+                if (!leftover.isEmpty()) {
+                    Location dropLoc = loc.clone().add(0.5, 0.5, 0.5);
+                    TaskScheduler.runAtLocation(plugin, dropLoc, () -> {
+                        World w = dropLoc.getWorld();
+                        if (w != null) {
+                            for (ItemStack left : leftover.values()) {
+                                w.dropItemNaturally(dropLoc, left);
+                            }
+                        }
+                    });
+                }
+            });
         } else {
-            dropLoc.getWorld().dropItemNaturally(dropLoc, item);
+            Location dropLoc = loc.clone().add(0.5, 0.5, 0.5);
+            TaskScheduler.runAtLocation(plugin, dropLoc, () -> {
+                World w = dropLoc.getWorld();
+                if (w != null) {
+                    w.dropItemNaturally(dropLoc, item);
+                }
+            });
         }
     }
 
-    private void playBreakEffects(Player player, Location loc, @Nullable PickaxeProfile profile, Material originalMat) {
+    private void playBreakEffects(Location loc, @Nullable PickaxeProfile profile, Material originalMat) {
         Location centerLoc = loc.clone().add(0.5, 0.5, 0.5);
+        World world = loc.getWorld();
+        if (world == null) return;
+
         if (profile != null && profile.breakSoundKey() != null) {
             Sound sound = Sound.sound(profile.breakSoundKey(), Sound.Source.BLOCK, profile.soundVolume(), profile.soundPitch());
-            loc.getWorld().playSound(sound, centerLoc.getX(), centerLoc.getY(), centerLoc.getZ());
+            world.playSound(sound, centerLoc.getX(), centerLoc.getY(), centerLoc.getZ());
         } else {
             try {
-                loc.getWorld().playSound(centerLoc, originalMat.createBlockData().getSoundGroup().getBreakSound(), 1.0f, 1.0f);
+                world.playSound(centerLoc, originalMat.createBlockData().getSoundGroup().getBreakSound(), 1.0f, 1.0f);
             } catch (Throwable ignored) {}
         }
 
         if (profile != null && profile.breakParticle() != null && !profile.breakParticle().isEmpty()) {
             try {
                 Particle p = Particle.valueOf(profile.breakParticle().toUpperCase(Locale.ROOT));
-                loc.getWorld().spawnParticle(p, centerLoc, 15, 0.3, 0.3, 0.3, 0.05);
+                world.spawnParticle(p, centerLoc, 15, 0.3, 0.3, 0.3, 0.05);
             } catch (IllegalArgumentException ignored) {}
         } else {
             try {
-                loc.getWorld().spawnParticle(Particle.BLOCK, centerLoc, 20, 0.25, 0.25, 0.25, 0.05, originalMat.createBlockData());
+                world.spawnParticle(Particle.BLOCK, centerLoc, 20, 0.25, 0.25, 0.25, 0.05, originalMat.createBlockData());
             } catch (Throwable ignored) {}
         }
     }

@@ -4,17 +4,24 @@
 
 ![Java](https://img.shields.io/badge/Java-25-orange.svg?style=for-the-badge&logo=openjdk)
 ![Paper](https://img.shields.io/badge/Paper-1.20%2B-blue.svg?style=for-the-badge&logo=minecraft)
+![Folia](https://img.shields.io/badge/Folia-Supported-cyan.svg?style=for-the-badge&logo=minecraft)
 ![WorldGuard](https://img.shields.io/badge/WorldGuard-7.0.21%2B-green.svg?style=for-the-badge)
 ![MythicMobs](https://img.shields.io/badge/MythicMobs-5.14%2B-purple.svg?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-brightgreen.svg?style=for-the-badge)[
+![License](https://img.shields.io/badge/License-MIT-brightgreen.svg?style=for-the-badge)
 
-**Advanced RPG Mining & Sequenced Block Regeneration Plugin for modern Paper servers, featuring native WorldGuard Custom Flags and deep MythicMobs integration.**
-]()
+**High-Performance RPG Mining & Sequenced Block Regeneration Plugin natively engineered for modern Paper, Purpur, and Folia server architectures.**
 </div>
 
 ---
 
 ## 🌟 Key Features
+
+- **⚡ Native Folia & Multi-Threading Support:**
+  - 100% Folia-compliant using a unified cross-platform scheduling layer (`TaskScheduler`).
+  - Player inventory modifications run on entity threads (`EntityScheduler`).
+  - Block modifications, natural item dropping, and particle effects execute strictly on the owning chunk's region thread (`RegionScheduler`).
+  - Console command executions run on `GlobalRegionScheduler`.
+  - AoE radius mining (3x3, 5x5) safely dispatches neighboring blocks to their respective region threads without cross-chunk concurrency violations.
 
 - **🔄 Sequenced Block Regeneration (`regen-pool`):**
   - Mined blocks **never permanently disappear like vanilla**.
@@ -37,6 +44,11 @@
 
 - **🛠️ Admin Bypass Mode:**
   - `/mr bypass` command allows administrators to freely place and break blocks without triggering mine mechanics.
+
+- **🧹 Zero Memory Leaks & Thread-Safe State:**
+  - Uses `ConcurrentHashMap`, `CopyOnWriteArrayList`, and `AtomicBoolean`/`AtomicInteger`.
+  - Automatic stale hit record decay (cleans up untouched blocks every 30 seconds).
+  - Explicit `PlayerQuitEvent` and `WorldUnloadEvent` handlers to prevent player/world object retention leaks.
 
 ---
 
@@ -100,33 +112,13 @@ MythiccRegion includes 6 pre-configured mine regions covering all **24 RPG mater
    ```bash
    /rg flag <region_id> mine-id mine_tier1
    ```
-3. Stand inside the mine and verify:
-   ```bash
-   /mr info
-   ```
 
 ---
 
-## 🔨 Building from Source
+## 🏗️ Build & Compilation
 
-Requirement: **JDK 25**
-
+Built with Gradle and Java 25:
 ```bash
-# Clone the repository
-git clone https://github.com/<username>/MythiccRegion.git
-cd MythiccRegion
-
-# Build on Linux / macOS
-./gradlew build
-
-# Build on Windows
-.\gradlew.bat build
+./gradlew clean build
 ```
-
-The output jar will be located in `build/libs/`.
-
----
-
-## 📄 License
-
-Developed by **VoChiDanh**. All rights reserved.
+Compiled JAR will be located at `build/libs/MythiccRegion-<version>.jar`.

@@ -1,19 +1,18 @@
 package net.danh.mythiccregion.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.danh.mythiccregion.MythiccRegion;
 import net.danh.mythiccregion.core.color.ColorParser;
 import net.danh.mythiccregion.core.command.CommandBuilder;
+import net.danh.mythiccregion.core.scheduler.TaskScheduler;
 import net.danh.mythiccregion.hook.MythicMobsHook;
 import net.danh.mythiccregion.hook.WorldGuardHook;
-import net.danh.mythiccregion.mine.MineBlockConfig;
-import net.danh.mythiccregion.mine.MineDrop;
 import net.danh.mythiccregion.mine.MineRegion;
 import net.danh.mythiccregion.pickaxe.PickaxeProfile;
-import org.bukkit.Material;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -22,11 +21,12 @@ import org.jspecify.annotations.NullMarked;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Handles all command registration and subcommands for MythiccRegion.
- * 100% configurable strings, 0% hardcoded text.
+ * 100% configurable strings and full Folia multi-threading concurrency compliance.
  */
 @NullMarked
 public final class MythiccRegionCommand {
@@ -94,13 +94,28 @@ public final class MythiccRegionCommand {
                 return;
             }
 
-            var loc = player.getLocation();
-            var world = loc.getWorld();
+            Location loc = player.getLocation();
+            World world = loc.getWorld();
             String worldName = world != null ? world.getName() : "Unknown";
 
-            player.sendMessage(ColorParser.parse("<gold>====== <yellow>MythiccRegion Diagnostics</yellow> ======"));
-            player.sendMessage(ColorParser.parse("<gray>World: <white>" + worldName + "</white> | WG Hook: " + (WorldGuardHook.isEnabled() ? "<green>ACTIVE</green>" : "<red>DISABLED</red>") + " | Mythic Hook: " + (MythicMobsHook.isEnabled() ? "<green>ACTIVE</green>" : "<red>DISABLED</red>")));
-            player.sendMessage(ColorParser.parse("<gray>Bypass Mode: " + (plugin.isBypassing(player.getUniqueId()) ? "<green>ACTIVE (Bypassing)</green>" : "<dark_gray>OFF</dark_gray>")));
+            String header = plugin.getMainConfig().getString("messages.command.info.header", "<gold>====== <yellow>MythiccRegion Diagnostics</yellow> ======");
+            player.sendMessage(ColorParser.parse(header));
+
+            String activeText = plugin.getMainConfig().getString("messages.command.info.active", "<green>ACTIVE</green>");
+            String disabledText = plugin.getMainConfig().getString("messages.command.info.disabled", "<red>DISABLED</red>");
+            String bypassActive = plugin.getMainConfig().getString("messages.command.info.bypass-active", "<green>ACTIVE (Bypassing)</green>");
+            String bypassOff = plugin.getMainConfig().getString("messages.command.info.bypass-off", "<dark_gray>OFF</dark_gray>");
+
+            String statusFormat = plugin.getMainConfig().getString("messages.command.info.status",
+                    "<gray>World: <white><world></white> | WG Hook: <wg_hook> | Mythic Hook: <mythic_hook>");
+            player.sendMessage(ColorParser.parse(statusFormat
+                    .replace("<world>", worldName)
+                    .replace("<wg_hook>", WorldGuardHook.isEnabled() ? activeText : disabledText)
+                    .replace("<mythic_hook>", MythicMobsHook.isEnabled() ? activeText : disabledText)
+            ));
+
+            String bypassFormat = plugin.getMainConfig().getString("messages.command.info.bypass-status", "<gray>Bypass Mode: <bypass_status>");
+            player.sendMessage(ColorParser.parse(bypassFormat.replace("<bypass_status>", plugin.isBypassing(player.getUniqueId()) ? bypassActive : bypassOff)));
 
             // 1. Inspect regions at player location
             Set<String> regions = WorldGuardHook.getRegionsAt(loc);
@@ -115,7 +130,15 @@ public final class MythiccRegionCommand {
 
             String customMineId = WorldGuardHook.getCustomMineId(loc);
             boolean flagAllowed = WorldGuardHook.isMineRegionAllowed(player, loc);
-            player.sendMessage(ColorParser.parse("<gray>mine-id flag: <gold>" + (customMineId != null ? customMineId : "none") + "</gold> | mine-region/custom-mine flag: " + (flagAllowed ? "<green>ALLOW</green>" : "<red>DENY / NOT SET</red>")));
+            String allowText = plugin.getMainConfig().getString("messages.command.info.flag-allow", "<green>ALLOW</green>");
+            String denyText = plugin.getMainConfig().getString("messages.command.info.flag-deny", "<red>DENY / NOT SET</red>");
+
+            String flagMsg = plugin.getMainConfig().getString("messages.command.info.flags",
+                    "<gray>mine-id flag: <gold><mine_id></gold> | mine-region flag: <flag_state>");
+            player.sendMessage(ColorParser.parse(flagMsg
+                    .replace("<mine_id>", customMineId != null ? customMineId : "none")
+                    .replace("<flag_state>", flagAllowed ? allowText : denyText)
+            ));
 
             // Check if matches a config mine
             MineRegion matched = null;
@@ -131,14 +154,26 @@ public final class MythiccRegionCommand {
                     }
                 }
             }
-            player.sendMessage(ColorParser.parse("<gray>Matched Mine Config: " + (matched != null ? "<green>" + matched.getRegionId() + " (Blocks: " + matched.getBlockConfigs().size() + ")</green>" : "<red>None</red>")));
+
+            if (matched != null) {
+                String matchedMsg = plugin.getMainConfig().getString("messages.command.info.matched-mine",
+                        "<gray>Matched Mine Config: <green><mine_id> (Blocks: <blocks>)</green>");
+                player.sendMessage(ColorParser.parse(matchedMsg
+                        .replace("<mine_id>", matched.getRegionId())
+                        .replace("<blocks>", String.valueOf(matched.getBlockConfigs().size()))
+                ));
+            } else {
+                String noMatchedMsg = plugin.getMainConfig().getString("messages.command.info.no-matched-mine",
+                        "<gray>Matched Mine Config: <red>None</red>");
+                player.sendMessage(ColorParser.parse(noMatchedMsg));
+            }
 
             // 2. Inspect held tool / pickaxe profile
             ItemStack hand = player.getInventory().getItemInMainHand();
             PickaxeProfile profile = plugin.getPickaxeManager().getProfile(hand);
             if (profile != null) {
                 sendMessage(plugin, player, "messages.command.info.held-pickaxe",
-                        "<gray>Held Tool Profile: <green><profile></green> | Power: <yellow><power></yellow> | AoE Radius: <aqua><radius></aqua>",
+                        "<gray>Held Tool: <green><profile></green> | Power: <yellow><power></yellow> | AoE Radius: <aqua><radius></aqua>",
                         "<profile>", profile.id(),
                         "<power>", String.valueOf(profile.miningPower()),
                         "<radius>", String.valueOf(profile.breakRadius())
@@ -155,8 +190,12 @@ public final class MythiccRegionCommand {
             Collection<MineRegion> regions = plugin.getMineManager().getRegions().values();
 
             sendMessage(plugin, sender, "messages.command.list.header", "<gold>====== <yellow>Configured Mine Regions (<count>)</yellow> ======", "<count>", String.valueOf(regions.size()));
+            String format = plugin.getMainConfig().getString("messages.command.list.format", "<dark_gray>• <gold><region></gold> <gray>(Blocks: <white><blocks></white><gray>)");
             for (MineRegion r : regions) {
-                sender.sendMessage(ColorParser.parse("<dark_gray>• <gold>" + r.getRegionId() + " <gray>(Blocks: <white>" + r.getBlockConfigs().size() + "<gray>)"));
+                sender.sendMessage(ColorParser.parse(format
+                        .replace("<region>", r.getRegionId())
+                        .replace("<blocks>", String.valueOf(r.getBlockConfigs().size()))
+                ));
             }
         });
     }
@@ -167,13 +206,18 @@ public final class MythiccRegionCommand {
             Collection<PickaxeProfile> profiles = plugin.getPickaxeManager().getProfiles().values();
 
             sendMessage(plugin, sender, "messages.command.pickaxes.header", "<gold>====== <yellow>Configured Pickaxe Profiles (<count>)</yellow> ======", "<count>", String.valueOf(profiles.size()));
+            String format = plugin.getMainConfig().getString("messages.command.pickaxes.format",
+                    "<dark_gray>• <green><profile></green> <gray>| Power: <yellow><power></yellow> <gray>| Dmg: <yellow><damage></yellow> <gray>| AoE Radius: <aqua><radius></aqua><mythic_suffix>");
+            String suffixFormat = plugin.getMainConfig().getString("messages.command.pickaxes.mythic-suffix", " <gray>(Mythic: <gold><mythic_item></gold><gray>)");
+
             for (PickaxeProfile p : profiles) {
-                sender.sendMessage(ColorParser.parse(
-                        "<dark_gray>• <green>" + p.id() +
-                        " <gray>| Power: <yellow>" + p.miningPower() +
-                        " <gray>| Dmg: <yellow>" + p.damagePerHit() +
-                        " <gray>| AoE Radius: <aqua>" + p.breakRadius() +
-                        (p.mythicItemId() != null ? " <gray>(Mythic: <gold>" + p.mythicItemId() + "<gray>)" : "")
+                String suffix = p.mythicItemId() != null ? suffixFormat.replace("<mythic_item>", p.mythicItemId()) : "";
+                sender.sendMessage(ColorParser.parse(format
+                        .replace("<profile>", p.id())
+                        .replace("<power>", String.valueOf(p.miningPower()))
+                        .replace("<damage>", String.valueOf(p.damagePerHit()))
+                        .replace("<radius>", String.valueOf(p.breakRadius()))
+                        .replace("<mythic_suffix>", suffix)
                 ));
             }
         });
@@ -210,6 +254,12 @@ public final class MythiccRegionCommand {
                 );
     }
 
+    /**
+     * Gives a pickaxe item to a player.
+     * Concurrency Guarantee:
+     * - Executed on target entity's thread via {@link TaskScheduler#runAtEntity}.
+     * - Spawning leftover items executed on the location's region thread via {@link TaskScheduler#runAtLocation}.
+     */
     private static void givePickaxeItem(MythiccRegion plugin, CommandSender sender, Player target, PickaxeProfile profile) {
         ItemStack itemToGive = null;
 
@@ -225,10 +275,21 @@ public final class MythiccRegionCommand {
             return;
         }
 
-        var leftover = target.getInventory().addItem(itemToGive);
-        for (ItemStack left : leftover.values()) {
-            target.getWorld().dropItemNaturally(target.getLocation(), left);
-        }
+        final ItemStack finalItem = itemToGive;
+        TaskScheduler.runAtEntity(plugin, target, () -> {
+            Map<Integer, ItemStack> leftover = target.getInventory().addItem(finalItem);
+            if (!leftover.isEmpty()) {
+                Location dropLoc = target.getLocation();
+                TaskScheduler.runAtLocation(plugin, dropLoc, () -> {
+                    World w = dropLoc.getWorld();
+                    if (w != null) {
+                        for (ItemStack left : leftover.values()) {
+                            w.dropItemNaturally(dropLoc, left);
+                        }
+                    }
+                });
+            }
+        });
 
         sendMessage(plugin, sender, "messages.command.give.success-sender",
                 "<green>Successfully gave pickaxe <gold><profile></gold> to <yellow><player></yellow>!",
