@@ -225,7 +225,17 @@ public final class MythiccRegionCommand {
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildGivePickaxeSubcommand(MythiccRegion plugin) {
         return CommandBuilder.literal("give")
+                .executes(ctx -> {
+                    sendMessage(plugin, ctx.getSource().getSender(), "messages.command.give.usage",
+                            "<yellow>Usage: <gold>/mythiccregion give <player> <profile></gold>");
+                    return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+                })
                 .then(CommandBuilder.playerArgument("target")
+                        .executes(ctx -> {
+                            sendMessage(plugin, ctx.getSource().getSender(), "messages.command.give.usage",
+                                    "<yellow>Usage: <gold>/mythiccregion give <player> <profile></gold>");
+                            return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+                        })
                         .then(CommandBuilder.wordArgument("profile", () -> plugin.getPickaxeManager().getProfiles().keySet())
                                 .executes(ctx -> {
                                     CommandSender sender = ctx.getSource().getSender();

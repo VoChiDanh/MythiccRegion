@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Java](https://img.shields.io/badge/Java-25-orange.svg?style=for-the-badge&logo=openjdk)
-![Paper](https://img.shields.io/badge/Paper-1.20%2B-blue.svg?style=for-the-badge&logo=minecraft)
+![Paper](https://img.shields.io/badge/Paper-26.3-blue.svg?style=for-the-badge&logo=minecraft)
 ![Folia](https://img.shields.io/badge/Folia-Supported-cyan.svg?style=for-the-badge&logo=minecraft)
 ![WorldGuard](https://img.shields.io/badge/WorldGuard-7.0.21%2B-green.svg?style=for-the-badge)
 ![MythicMobs](https://img.shields.io/badge/MythicMobs-5.14%2B-purple.svg?style=for-the-badge)

@@ -22,6 +22,9 @@ mine:
   # Allow players in Creative mode to trigger custom mine mechanics instead of instant breaking
   allow-creative-mining: true
 
+  # Whether mining blocks consumes durability from held tools in Survival mode
+  damage-tool: true
+
 messages:
   no-permission: "<red>You do not have permission to execute this command!"
   player-only: "<red>This command can only be executed by in-game players!"
@@ -67,6 +70,7 @@ messages:
       format: "<dark_gray>• <green><profile></green> <gray>| Power: <yellow><power></yellow> <gray>| Dmg: <yellow><damage></yellow> <gray>| AoE Radius: <aqua><radius></aqua><mythic_suffix>"
       mythic-suffix: " <gray>(Mythic: <gold><mythic_item></gold><gray>)"
     give:
+      usage: "<yellow>Usage: <gold>/mythiccregion give <player> <profile></gold>"
       unknown-profile: "<red>Unknown pickaxe profile: <gold><profile></gold>!"
       player-not-found: "<red>Target player could not be found!"
       cannot-create-item: "<red>Could not generate item for profile: <gold><profile></gold>!"

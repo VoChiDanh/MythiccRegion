@@ -88,6 +88,7 @@ public final class MythicMobsHook {
 
     /**
      * Creates an ItemStack based on a MythicMobs item ID.
+     * Includes fallback generation directly from MythicItem if pre-cached item stack is absent.
      */
     @Nullable
     public static ItemStack getItem(String mythicItemId, int amount, @Nullable Player player) {
@@ -99,6 +100,9 @@ public final class MythicMobsHook {
             Optional<MythicItem> opt = MythicBukkit.inst().getItemManager().getItem(mythicItemId);
             if (opt.isPresent()) {
                 ItemStack stack = MythicBukkit.inst().getItemManager().getItemStack(mythicItemId);
+                if (stack == null) {
+                    stack = BukkitAdapter.adapt(opt.get().generateItemStack(1));
+                }
                 if (stack != null) {
                     stack.setAmount(amount);
                     return stack;

@@ -46,6 +46,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <li>Console commands run on {@link TaskScheduler#runGlobal}.</li>
  *   <li>AoE radius mining dispatches each neighboring block coordinate to its specific region thread.</li>
  *   <li>All state maps use ConcurrentHashMap with PlayerQuitEvent cleanup to eliminate memory leaks.</li>
+ *   <li>Item delivery auto-splits oversized drops into legal maximum stack sizes.</li>
  * </ul>
  */
 @NullMarked
@@ -221,7 +222,10 @@ public class MineBlockListener implements Listener {
             return;
         }
 
-        // When standard BlockBreakEvent fires, the player completed the mining process
+        // Apply tool durability damage in survival
+        damageHeldTool(player);
+
+        // When standard BlockBreakEvent fires, mining is complete
         int radius = profile != null ? profile.breakRadius() : 0;
         if (radius <= 0) {
             completeBlockBreak(player, centerBlock, blockConfig, profile);
@@ -239,19 +243,16 @@ public class MineBlockListener implements Listener {
             return;
         }
 
-        int radius = profile != null ? profile.breakRadius() : 0;
-        if (radius <= 0) {
-            processProgressiveHit(player, block, blockConfig, profile);
-        } else {
-            processAoeMining(player, block, mineRegion, profile, radius);
-        }
+        // Apply progressive mining hit logic (supports hardness progression even on AoE pickaxes)
+        processProgressiveHit(player, block, blockConfig, profile, mineRegion);
     }
 
     private void processProgressiveHit(
             Player player,
             Block block,
             MineBlockConfig blockConfig,
-            @Nullable PickaxeProfile profile
+            @Nullable PickaxeProfile profile,
+            MineRegion mineRegion
     ) {
         Location loc = block.getLocation();
         int damage = profile != null ? profile.damagePerHit() : 1;
@@ -271,14 +272,22 @@ public class MineBlockListener implements Listener {
             return;
         }
 
-        completeBlockBreak(player, block, blockConfig, profile);
+        // Block integrity depleted: execute break
+        damageHeldTool(player);
+
+        int radius = profile != null ? profile.breakRadius() : 0;
+        if (radius <= 0) {
+            completeBlockBreak(player, block, blockConfig, profile);
+        } else {
+            processAoeMining(player, block, mineRegion, profile, radius);
+        }
     }
 
     /**
      * Executes the full breaking cycle:
      * 1. Resets crack visual animation & hit counter.
      * 2. Plays break sound & particles.
-     * 3. Drops custom items (Mythic / Vanilla) with multiplier calculations.
+     * 3. Drops custom items (Mythic / Vanilla) with multiplier calculations and stack splitting.
      * 4. Executes configured console commands via GlobalRegionScheduler.
      * 5. Instantly turns block into replaceBlock (e.g. BEDROCK) and schedules sequenced regeneration.
      */
@@ -429,8 +438,10 @@ public class MineBlockListener implements Listener {
 
     /**
      * Executes AoE radius mining.
-     * On Folia, neighboring blocks might cross chunk borders into adjacent threaded regions.
-     * Each target block coordinate is safely dispatched to its owning region thread via {@link TaskScheduler#runAtLocation}.
+     * Concurrency & Region Boundary Guarantees:
+     * 1. Confined strictly to blocks inside the valid WorldGuard mine region.
+     * 2. Each neighboring block coordinate is safely dispatched to its owning region thread via {@link TaskScheduler#runAtLocation}.
+     * 3. Aborts if the held pickaxe breaks during mining.
      */
     private void processAoeMining(
             Player player,
@@ -450,9 +461,22 @@ public class MineBlockListener implements Listener {
                 for (int z = cz - radius; z <= cz + radius; z++) {
                     Location targetLoc = new Location(world, x, y, z);
 
+                    // Ensure target location is also within the valid mine region
+                    String customId = WorldGuardHook.getCustomMineId(targetLoc);
+                    if (customId != null && !customId.equalsIgnoreCase(mineRegion.getRegionId())) {
+                        continue;
+                    }
+                    if (customId == null) {
+                        Set<String> targetRegions = WorldGuardHook.getRegionsAt(targetLoc);
+                        if (!targetRegions.contains(mineRegion.getRegionId())) {
+                            continue;
+                        }
+                    }
+
                     // Dispatch execution to the region thread owning targetLoc (cross-chunk safe on Folia)
                     TaskScheduler.runAtLocation(plugin, targetLoc, () -> {
                         if (handler.isPendingRespawn(targetLoc)) return;
+                        if (player.getInventory().getItemInMainHand().getType().isAir()) return;
 
                         Block targetBlock = targetLoc.getBlock();
                         MineBlockConfig cfg = mineRegion.getBlockConfig(targetBlock.getType());
@@ -503,7 +527,9 @@ public class MineBlockListener implements Listener {
             if (drop.mythicDropTable() != null && !drop.mythicDropTable().isEmpty()) {
                 List<ItemStack> dtItems = MythicMobsHook.getDropTableItems(drop.mythicDropTable(), player);
                 for (ItemStack dtItem : dtItems) {
-                    dtItem.setAmount(Math.max(1, dtItem.getAmount() * finalMultiplier));
+                    int originalAmount = dtItem.getAmount();
+                    int totalAmount = Math.max(1, originalAmount * finalMultiplier);
+                    dtItem.setAmount(totalAmount);
                     deliverItem(player, loc, dtItem, directToInventory);
                 }
                 continue;
@@ -547,11 +573,23 @@ public class MineBlockListener implements Listener {
 
     /**
      * Delivers item drops cleanly.
-     * Folia Concurrency Guarantee:
-     * - Direct-to-inventory modifications execute strictly on the player's entity thread.
-     * - Spawning dropped item entities executes strictly on the target location's region thread.
+     * Automatically splits oversized drops into legal maximum stack sizes to prevent inventory corruption.
      */
     private void deliverItem(Player player, Location loc, ItemStack item, boolean directToInventory) {
+        int maxStack = item.getMaxStackSize();
+        int remaining = item.getAmount();
+
+        while (remaining > 0) {
+            int toGive = Math.min(remaining, maxStack);
+            ItemStack chunk = item.clone();
+            chunk.setAmount(toGive);
+            remaining -= toGive;
+
+            deliverSingleStack(player, loc, chunk, directToInventory);
+        }
+    }
+
+    private void deliverSingleStack(Player player, Location loc, ItemStack item, boolean directToInventory) {
         if (directToInventory) {
             TaskScheduler.runAtEntity(plugin, player, () -> {
                 Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
@@ -576,6 +614,14 @@ public class MineBlockListener implements Listener {
                 }
             });
         }
+    }
+
+    private void damageHeldTool(Player player) {
+        if (player.getGameMode() == GameMode.CREATIVE) return;
+        if (!mainConfig.getBoolean("mine.damage-tool", true)) return;
+        TaskScheduler.runAtEntity(plugin, player, () -> {
+            player.damageItemStack(EquipmentSlot.HAND, 1);
+        });
     }
 
     private void playBreakEffects(Location loc, @Nullable PickaxeProfile profile, Material originalMat) {
